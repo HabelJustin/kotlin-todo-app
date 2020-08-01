@@ -2,17 +2,14 @@ package com.example.todoappbystevdzasan.fragments.list
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.todoappbystevdzasan.R
@@ -52,6 +49,8 @@ class ListFragment : Fragment(), ListAdapter.OnItemClickListener, SearchView.OnQ
             this
         )
     }
+
+    private lateinit var staggeredGridLayoutManager: StaggeredGridLayoutManager
 
     private lateinit var searchView: SearchView
     private lateinit var menuSortByHigh: MenuItem
@@ -139,13 +138,14 @@ class ListFragment : Fragment(), ListAdapter.OnItemClickListener, SearchView.OnQ
     private fun setupRecyclerView() {
 
         val recyclerView = binding.recyclerView
-        val linearLayoutManager = LinearLayoutManager(requireContext())
-        val staggeredGridLayoutManager =
-            StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+        staggeredGridLayoutManager =
+            StaggeredGridLayoutManager(
+                if (mSharedViewModel.layoutType.value === GRID) 2 else 1,
+                StaggeredGridLayoutManager.VERTICAL
+            )
 
         recyclerView.apply {
-            layoutManager =
-                if (mSharedViewModel.layoutType.value === GRID) staggeredGridLayoutManager else linearLayoutManager
+            layoutManager = staggeredGridLayoutManager
             adapter = singleTodoController.adapter
             itemAnimator = SlideInUpAnimator().apply {
                 addDuration = 300
@@ -308,15 +308,16 @@ class ListFragment : Fragment(), ListAdapter.OnItemClickListener, SearchView.OnQ
                 item.isChecked = !item.isChecked
                 menuViewByGrid.isChecked = false
                 mSharedViewModel.setLayoutType(LINEAR)
-                binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+                staggeredGridLayoutManager.spanCount = 1
+                staggeredGridLayoutManager.requestSimpleAnimationsInNextLayout()
                 return true
             }
             R.id.menu_view_by_grid -> {
                 item.isChecked = !item.isChecked
                 menuViewByList.isChecked = false
                 mSharedViewModel.setLayoutType(GRID)
-                binding.recyclerView.layoutManager =
-                    StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+                staggeredGridLayoutManager.spanCount = 2
+                staggeredGridLayoutManager.requestSimpleAnimationsInNextLayout()
                 return true
             }
             else -> super.onOptionsItemSelected(item)
@@ -333,6 +334,7 @@ class ListFragment : Fragment(), ListAdapter.OnItemClickListener, SearchView.OnQ
     }
 
     override fun onEpoxyItemClick(todo: Todo) {
+        hideKeyboard(requireActivity())
         findNavController().navigate(ListFragmentDirections.actionListFragmentToUpdateFragment(todo))
     }
 
