@@ -358,9 +358,15 @@ class ListFragment : Fragment(), ListAdapter.OnItemClickListener, SearchView.OnQ
     private fun searchThroughDatabase(query: String) {
         val searchQuery = "%$query%"
         mTodoViewModel.searchDatabase(searchQuery).observe(viewLifecycleOwner, Observer {
-            /*adapter.addData(it)*/
             singleTodoController.addData(it)
         })
+
+        // reset sortBy (if any)
+        if (mSharedViewModel.sortBy.value != cNone) {
+            menuSortByHigh.isChecked = false
+            menuSortByLow.isChecked = false
+            mSharedViewModel.setSortBy(cNone)
+        }
     }
     /* End of @OnQueryTextListener */
 }
