@@ -20,9 +20,7 @@ import com.example.todoappbystevdzasan.data.TodoViewModel
 import com.example.todoappbystevdzasan.data.models.Todo
 import com.example.todoappbystevdzasan.databinding.FragmentListBinding
 import com.example.todoappbystevdzasan.epoxy.SingleTodoController
-import com.example.todoappbystevdzasan.fragments.GRID
-import com.example.todoappbystevdzasan.fragments.LINEAR
-import com.example.todoappbystevdzasan.fragments.SharedViewModel
+import com.example.todoappbystevdzasan.fragments.*
 import com.example.todoappbystevdzasan.fragments.list.adapter.ListAdapter
 import com.example.todoappbystevdzasan.fragments.list.adapter.SwipeToDelete
 import com.example.todoappbystevdzasan.utils.hideKeyboard
@@ -56,6 +54,10 @@ class ListFragment : Fragment(), ListAdapter.OnItemClickListener, SearchView.OnQ
     }
 
     private lateinit var searchView: SearchView
+    private lateinit var menuSortByHigh: MenuItem
+    private lateinit var menuSortByLow: MenuItem
+    private lateinit var menuViewByList: MenuItem
+    private lateinit var menuViewByGrid: MenuItem
 
     private val singleTodoController: SingleTodoController by lazy {
         SingleTodoController(
@@ -95,18 +97,43 @@ class ListFragment : Fragment(), ListAdapter.OnItemClickListener, SearchView.OnQ
         binding.lifecycleOwner = viewLifecycleOwner
         binding.mSharedViewModel = mSharedViewModel
 
-        // Observe TodoData
-        mTodoViewModel.getAllData.observe(viewLifecycleOwner, Observer { todos ->
-            mSharedViewModel.checkIfDatabaseEmpty(todos)
-            /*adapter.addData(todos)*/
-            singleTodoController.addData(todos)
-        })
+        checkDataSortType()
 
         setupRecyclerView()
 
         hideKeyboard(requireActivity())
 
         return binding.root
+    }
+
+    private fun checkDataSortType() {
+        // Observe TodoData
+        /*mTodoViewModel.getAllData.observe(viewLifecycleOwner, Observer { todos ->
+            mSharedViewModel.checkIfDatabaseEmpty(todos)
+            *//*adapter.addData(todos)*//*
+            singleTodoController.addData(todos)
+        })*/
+        when (mSharedViewModel.sortBy.value) {
+            cHigh -> {
+                mTodoViewModel.sortByHighPriority.observe(viewLifecycleOwner, Observer {
+                    mSharedViewModel.checkIfDatabaseEmpty(it)
+                    singleTodoController.addData(it)
+                })
+            }
+            cLow -> {
+                mTodoViewModel.sortByLowPriority.observe(viewLifecycleOwner, Observer {
+                    mSharedViewModel.checkIfDatabaseEmpty(it)
+                    singleTodoController.addData(it)
+                })
+            }
+            else -> {
+                mTodoViewModel.getAllData.observe(viewLifecycleOwner, Observer {
+                    mSharedViewModel.checkIfDatabaseEmpty(it)
+                    adapter.addData(it)
+                    singleTodoController.addData(it)
+                })
+            }
+        }
     }
 
     private fun setupRecyclerView() {
@@ -208,8 +235,40 @@ class ListFragment : Fragment(), ListAdapter.OnItemClickListener, SearchView.OnQ
         }
     }
 
+    private fun initMenuState() {
+        when (mSharedViewModel.sortBy.value) {
+            cHigh -> {
+                menuSortByHigh.isChecked = true
+                menuSortByLow.isChecked = false
+            }
+            cLow -> {
+                menuSortByLow.isChecked = true
+                menuSortByHigh.isChecked = false
+            }
+        }
+
+        when (mSharedViewModel.layoutType.value) {
+            LINEAR -> {
+                menuViewByList.isChecked = true
+                menuViewByGrid.isChecked = false
+            }
+            GRID -> {
+                menuViewByGrid.isChecked = true
+                menuViewByList.isChecked = false
+            }
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.list_fragment_menu, menu)
+
+        menuSortByHigh = menu.findItem(R.id.menu_priority_high)
+        menuSortByLow = menu.findItem(R.id.menu_priority_low)
+
+        menuViewByList = menu.findItem(R.id.menu_view_by_list)
+        menuViewByGrid = menu.findItem(R.id.menu_view_by_grid)
+
+        initMenuState()
 
         val search = menu.findItem(R.id.menu_search)
         searchView = search.actionView as SearchView
@@ -234,17 +293,27 @@ class ListFragment : Fragment(), ListAdapter.OnItemClickListener, SearchView.OnQ
                 return true
             }
             R.id.menu_priority_high -> {
+                item.isChecked = !item.isChecked
+                menuSortByLow.isChecked = false
+                mSharedViewModel.setSortBy(cHigh)
                 onSortList(SORT_HIGH)
             }
             R.id.menu_priority_low -> {
+                item.isChecked = !item.isChecked
+                menuSortByHigh.isChecked = false
+                mSharedViewModel.setSortBy(cLow)
                 onSortList(SORT_LOW)
             }
             R.id.menu_view_by_list -> {
+                item.isChecked = !item.isChecked
+                menuViewByGrid.isChecked = false
                 mSharedViewModel.setLayoutType(LINEAR)
                 binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
                 return true
             }
             R.id.menu_view_by_grid -> {
+                item.isChecked = !item.isChecked
+                menuViewByList.isChecked = false
                 mSharedViewModel.setLayoutType(GRID)
                 binding.recyclerView.layoutManager =
                     StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)

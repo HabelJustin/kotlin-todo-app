@@ -16,16 +16,34 @@ import com.example.todoappbystevdzasan.data.models.Todo
 const val cHigh = "High Priority"
 const val cMedium = "Medium Priority"
 const val cLow = "Low Priority"
+const val cNone = "None Priority"
 
 const val LINEAR = "LINEAR"
 const val GRID = "GRID"
 
 class SharedViewModel(application: Application) : AndroidViewModel(application) {
 
+    // Widgets state
+    private val _sortBy: MutableLiveData<String> = MutableLiveData(cNone)
+    val sortBy: LiveData<String> get() = _sortBy
+
+    /*private val _viewBy: MutableLiveData<String> = MutableLiveData(LINEAR)
+    val viewBy: LiveData<String> get() = _viewBy*/
+    // End of Widgets state
+
     val emptyDatabase: MutableLiveData<Boolean> = MutableLiveData(false)
 
     private val _layoutType: MutableLiveData<String> = MutableLiveData(LINEAR)
-    val layoutType: LiveData<String> = _layoutType
+    val layoutType: LiveData<String> get() = _layoutType
+
+
+    fun setSortBy(sortType: String) {
+        _sortBy.value = sortType
+    }
+
+    /*fun setViewBy(viewType: String){
+        _viewBy.value = viewType
+    }*/
 
     fun setLayoutType(layoutType: String) {
         _layoutType.value = layoutType
